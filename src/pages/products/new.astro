@@ -1,0 +1,242 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:3000';
+---
+
+<AdminLayout title="Neues Produkt">
+  <div class="max-w-4xl">
+    <form id="product-form" class="space-y-8">
+      <!-- Basic Info -->
+      <div class="bg-black-soft border border-gray-800 rounded-xl p-6 space-y-6">
+        <h2 class="text-lg font-medium">Grundinformationen</h2>
+        
+        <div class="space-y-4">
+          <div>
+            <label for="name" class="block text-sm font-medium text-gray-300 mb-2">
+              Produktname *
+            </label>
+            <input 
+              type="text" 
+              id="name" 
+              name="name" 
+              required
+              class="w-full px-4 py-3 bg-black-rich border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:border-brown-warm focus:outline-none transition-colors"
+              placeholder="z.B. Der Klassische Anzug"
+            />
+          </div>
+
+          <div>
+            <label for="description" class="block text-sm font-medium text-gray-300 mb-2">
+              Kurzbeschreibung *
+            </label>
+            <textarea 
+              id="description" 
+              name="description" 
+              rows="3"
+              required
+              class="w-full px-4 py-3 bg-black-rich border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:border-brown-warm focus:outline-none transition-colors resize-none"
+              placeholder="Eine kurze, prägnante Beschreibung des Produkts..."
+            ></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="category" class="block text-sm font-medium text-gray-300 mb-2">
+                Kategorie
+              </label>
+              <input 
+                type="text" 
+                id="category" 
+                name="category" 
+                class="w-full px-4 py-3 bg-black-rich border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:border-brown-warm focus:outline-none transition-colors"
+                placeholder="z.B. Anzüge"
+              />
+            </div>
+            <div>
+              <label for="tags" class="block text-sm font-medium text-gray-300 mb-2">
+                Tags (kommagetrennt)
+              </label>
+              <input 
+                type="text" 
+                id="tags" 
+                name="tags" 
+                class="w-full px-4 py-3 bg-black-rich border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:border-brown-warm focus:outline-none transition-colors"
+                placeholder="z.B. Klassisch, Wolle, Premium"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Story -->
+      <div class="bg-black-soft border border-gray-800 rounded-xl p-6 space-y-6">
+        <h2 class="text-lg font-medium">Geschichte</h2>
+        
+        <div>
+          <label for="story" class="block text-sm font-medium text-gray-300 mb-2">
+            Produktgeschichte * (HTML erlaubt)
+          </label>
+          <textarea 
+            id="story" 
+            name="story" 
+            rows="10"
+            required
+            class="w-full px-4 py-3 bg-black-rich border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:border-brown-warm focus:outline-none transition-colors font-mono text-sm"
+            placeholder="<p>Die Geschichte dieses Produkts...</p>"
+          ></textarea>
+          <p class="text-xs text-gray-500 mt-2">
+            Verwenden Sie HTML-Tags wie &lt;p&gt;, &lt;strong&gt;, &lt;em&gt; für die Formatierung
+          </p>
+        </div>
+      </div>
+
+      <!-- Media -->
+      <div class="bg-black-soft border border-gray-800 rounded-xl p-6 space-y-6">
+        <h2 class="text-lg font-medium">Medien</h2>
+        
+        <div>
+          <label for="images" class="block text-sm font-medium text-gray-300 mb-2">
+            Bilder-URLs (eine pro Zeile)
+          </label>
+          <textarea 
+            id="images" 
+            name="images" 
+            rows="4"
+            class="w-full px-4 py-3 bg-black-rich border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:border-brown-warm focus:outline-none transition-colors font-mono text-sm"
+            placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+          ></textarea>
+          <p class="text-xs text-gray-500 mt-2">
+            Das erste Bild wird als Hauptbild verwendet
+          </p>
+        </div>
+
+        <div>
+          <label for="videos" class="block text-sm font-medium text-gray-300 mb-2">
+            Video-URLs (eine pro Zeile)
+          </label>
+          <textarea 
+            id="videos" 
+            name="videos" 
+            rows="2"
+            class="w-full px-4 py-3 bg-black-rich border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:border-brown-warm focus:outline-none transition-colors font-mono text-sm"
+            placeholder="https://youtube.com/watch?v=..."
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Display Options -->
+      <div class="bg-black-soft border border-gray-800 rounded-xl p-6 space-y-6">
+        <h2 class="text-lg font-medium">Anzeigeoptionen</h2>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="template" class="block text-sm font-medium text-gray-300 mb-2">
+              Template
+            </label>
+            <select 
+              id="template" 
+              name="template"
+              class="w-full px-4 py-3 bg-black-rich border border-gray-800 rounded-lg text-white focus:border-brown-warm focus:outline-none transition-colors"
+            >
+              <option value="modern">Modern</option>
+              <option value="classic">Klassisch</option>
+              <option value="minimal">Minimal</option>
+            </select>
+          </div>
+          <div>
+            <label for="colorScheme" class="block text-sm font-medium text-gray-300 mb-2">
+              Farbschema
+            </label>
+            <select 
+              id="colorScheme" 
+              name="colorScheme"
+              class="w-full px-4 py-3 bg-black-rich border border-gray-800 rounded-lg text-white focus:border-brown-warm focus:outline-none transition-colors"
+            >
+              <option value="dark">Dunkel</option>
+              <option value="light">Hell</option>
+              <option value="warm">Warm</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <input 
+            type="checkbox" 
+            id="published" 
+            name="published"
+            class="w-5 h-5 rounded border-gray-800 bg-black-rich text-brown-warm focus:ring-brown-warm focus:ring-offset-0"
+          />
+          <label for="published" class="text-sm text-gray-300">
+            Sofort veröffentlichen
+          </label>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-4">
+        <button 
+          type="submit"
+          class="px-6 py-3 bg-brown-warm hover:bg-brown-light text-white rounded-lg transition-colors"
+        >
+          Produkt erstellen
+        </button>
+        <a 
+          href="/products"
+          class="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+        >
+          Abbrechen
+        </a>
+      </div>
+    </form>
+  </div>
+</AdminLayout>
+
+<script define:vars={{ API_URL }}>
+  document.getElementById('product-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    
+    const product = {
+      name: formData.get('name'),
+      description: formData.get('description'),
+      story: formData.get('story'),
+      category: formData.get('category') || 'Uncategorized',
+      tags: formData.get('tags') 
+        ? formData.get('tags').split(',').map(t => t.trim()).filter(Boolean)
+        : [],
+      images: formData.get('images')
+        ? formData.get('images').split('\n').map(u => u.trim()).filter(Boolean)
+        : [],
+      videos: formData.get('videos')
+        ? formData.get('videos').split('\n').map(u => u.trim()).filter(Boolean)
+        : [],
+      template: formData.get('template'),
+      colorScheme: formData.get('colorScheme'),
+      published: formData.get('published') === 'on',
+    };
+
+    try {
+      const response = await fetch(`${API_URL}/api/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(product),
+      });
+
+      if (response.ok) {
+        const created = await response.json();
+        window.location.href = `/products/${created._id}/qrcode`;
+      } else {
+        const error = await response.json();
+        alert(`Fehler: ${error.error || 'Unbekannter Fehler'}`);
+      }
+    } catch (error) {
+      console.error('Error creating product:', error);
+      alert('Fehler beim Erstellen des Produkts. Stellen Sie sicher, dass der API-Server läuft.');
+    }
+  });
+</script>

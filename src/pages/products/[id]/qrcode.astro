@@ -1,0 +1,197 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+
+const { id } = Astro.params;
+const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:3000';
+const APP_URL = import.meta.env.PUBLIC_APP_URL || 'http://localhost:3000';
+---
+
+<AdminLayout title="QR-Code">
+  <div class="max-w-2xl">
+    <div id="loading" class="text-center py-12">
+      <p class="text-gray-400">Lade Produkt...</p>
+    </div>
+
+    <div id="content" class="hidden space-y-8">
+      <!-- Product Info -->
+      <div class="bg-black-soft border border-gray-800 rounded-xl p-6">
+        <h2 class="text-xl font-medium font-serif mb-2" id="product-name">-</h2>
+        <p class="text-gray-400 text-sm" id="product-url">-</p>
+      </div>
+
+      <!-- QR Code Display -->
+      <div class="bg-black-soft border border-gray-800 rounded-xl p-8 text-center">
+        <div class="inline-block bg-white p-6 rounded-xl mb-6">
+          <img 
+            id="qr-image" 
+            src="" 
+            alt="QR Code"
+            class="w-64 h-64"
+          />
+        </div>
+        
+        <p class="text-gray-400 text-sm mb-6">
+          Scannen Sie diesen QR-Code, um die Produktseite zu öffnen
+        </p>
+
+        <!-- Download Options -->
+        <div class="flex flex-wrap justify-center gap-4">
+          <a 
+            id="download-png"
+            href="#" 
+            download
+            class="inline-flex items-center gap-2 px-4 py-2 bg-brown-warm hover:bg-brown-light text-white rounded-lg transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            PNG herunterladen
+          </a>
+          <a 
+            id="download-svg"
+            href="#" 
+            download
+            class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            SVG herunterladen
+          </a>
+        </div>
+      </div>
+
+      <!-- Size Options -->
+      <div class="bg-black-soft border border-gray-800 rounded-xl p-6">
+        <h3 class="text-lg font-medium mb-4">Größenoptionen</h3>
+        <div class="grid grid-cols-4 gap-3">
+          {[200, 300, 400, 500].map(size => (
+            <button 
+              class="size-btn px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm"
+              data-size={size}
+            >
+              {size}px
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <!-- Error Correction Level -->
+      <div class="bg-black-soft border border-gray-800 rounded-xl p-6">
+        <h3 class="text-lg font-medium mb-4">Fehlerkorrektur</h3>
+        <div class="grid grid-cols-4 gap-3">
+          {[
+            { level: 'L', label: 'Niedrig (7%)' },
+            { level: 'M', label: 'Mittel (15%)' },
+            { level: 'Q', label: 'Quartil (25%)' },
+            { level: 'H', label: 'Hoch (30%)' },
+          ].map(({ level, label }) => (
+            <button 
+              class={`ecl-btn px-4 py-2 rounded-lg transition-colors text-sm ${level === 'M' ? 'bg-brown-warm text-white' : 'bg-gray-800 hover:bg-gray-700 text-white'}`}
+              data-ecl={level}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-4">
+        <a 
+          href="/products"
+          class="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+        >
+          ← Zurück zur Liste
+        </a>
+        <a 
+          id="view-product"
+          href="#"
+          target="_blank"
+          class="px-6 py-3 border border-gray-800 hover:border-gray-700 text-white rounded-lg transition-colors"
+        >
+          Produktseite öffnen →
+        </a>
+      </div>
+    </div>
+
+    <div id="error" class="hidden text-center py-12">
+      <p class="text-red-400">Produkt nicht gefunden</p>
+      <a href="/products" class="text-brown-warm hover:text-brown-light mt-4 inline-block">
+        Zurück zur Liste
+      </a>
+    </div>
+  </div>
+</AdminLayout>
+
+<script define:vars={{ id, API_URL, APP_URL }}>
+  let currentSize = 300;
+  let currentEcl = 'M';
+  let productSlug = '';
+
+  async function loadProduct() {
+    try {
+      const response = await fetch(`${API_URL}/api/products/${id}`);
+      if (!response.ok) throw new Error('Not found');
+      
+      const product = await response.json();
+      productSlug = product.slug;
+      
+      document.getElementById('product-name').textContent = product.name;
+      document.getElementById('product-url').textContent = `${APP_URL}/product/${product.slug}`;
+      document.getElementById('view-product').href = `${APP_URL}/product/${product.slug}`;
+      
+      updateQRCode();
+      
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('content').classList.remove('hidden');
+    } catch (error) {
+      console.error('Error loading product:', error);
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('error').classList.remove('hidden');
+    }
+  }
+
+  function updateQRCode() {
+    const qrUrl = `${API_URL}/api/qrcode/${id}?size=${currentSize}&ecl=${currentEcl}`;
+    const svgUrl = `${API_URL}/api/qrcode/${id}?format=svg&size=${currentSize}&ecl=${currentEcl}`;
+    
+    document.getElementById('qr-image').src = qrUrl;
+    document.getElementById('download-png').href = qrUrl;
+    document.getElementById('download-png').download = `${productSlug || id}-qrcode.png`;
+    document.getElementById('download-svg').href = svgUrl;
+    document.getElementById('download-svg').download = `${productSlug || id}-qrcode.svg`;
+  }
+
+  // Size buttons
+  document.querySelectorAll('.size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentSize = parseInt(btn.dataset.size);
+      document.querySelectorAll('.size-btn').forEach(b => {
+        b.classList.remove('bg-brown-warm');
+        b.classList.add('bg-gray-800');
+      });
+      btn.classList.remove('bg-gray-800');
+      btn.classList.add('bg-brown-warm');
+      updateQRCode();
+    });
+  });
+
+  // ECL buttons
+  document.querySelectorAll('.ecl-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentEcl = btn.dataset.ecl;
+      document.querySelectorAll('.ecl-btn').forEach(b => {
+        b.classList.remove('bg-brown-warm');
+        b.classList.add('bg-gray-800');
+      });
+      btn.classList.remove('bg-gray-800');
+      btn.classList.add('bg-brown-warm');
+      updateQRCode();
+    });
+  });
+
+  loadProduct();
+</script>
