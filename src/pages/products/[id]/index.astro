@@ -180,7 +180,7 @@ const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:3000';
       </div>
 
       <!-- Actions -->
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-4 flex-wrap">
         <button 
           type="submit"
           class="px-6 py-3 bg-brown-warm hover:bg-brown-light text-white rounded-lg transition-colors"
@@ -192,6 +192,16 @@ const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:3000';
           class="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
         >
           Abbrechen
+        </a>
+        <a 
+          id="hotspots-link"
+          href={`/products/${id}/hotspots`}
+          class="px-6 py-3 border border-brown-warm/50 hover:border-brown-warm text-brown-warm hover:text-brown-light rounded-lg transition-colors flex items-center gap-2"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+          </svg>
+          Interaktive Hotspots
         </a>
         <a 
           id="qr-link"

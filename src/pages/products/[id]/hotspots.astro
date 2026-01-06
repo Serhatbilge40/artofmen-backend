@@ -1,0 +1,469 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+
+const { id } = Astro.params;
+const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:3000';
+---
+
+<AdminLayout title="Interaktive Hotspots bearbeiten">
+  <div class="max-w-6xl">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <a href={`/products/${id}`} class="text-brown-warm hover:text-brown-light text-sm mb-2 inline-flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Zurück zum Produkt
+        </a>
+        <h1 class="text-2xl font-semibold" id="product-name">Interaktive Hotspots</h1>
+      </div>
+      <button 
+        id="save-hotspots"
+        class="px-6 py-3 bg-brown-warm hover:bg-brown-light text-white rounded-lg transition-colors flex items-center gap-2"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        Speichern
+      </button>
+    </div>
+
+    <div id="loading" class="text-center py-12">
+      <p class="text-gray-400">Lade Produkt...</p>
+    </div>
+
+    <div id="editor-container" class="hidden">
+      <!-- Image Selector -->
+      <div class="bg-black-soft border border-gray-800 rounded-xl p-6 mb-6">
+        <h2 class="text-lg font-medium mb-4">Bild auswählen</h2>
+        <p class="text-sm text-gray-400 mb-4">Wählen Sie ein Bild aus, um Hotspots hinzuzufügen. Klicken Sie auf das Bild, um einen neuen Hotspot zu erstellen.</p>
+        <div id="image-selector" class="flex gap-4 overflow-x-auto pb-4">
+          <!-- Images will be loaded here -->
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Interactive Image -->
+        <div class="lg:col-span-2">
+          <div class="bg-black-soft border border-gray-800 rounded-xl p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-medium">Bild mit Hotspots</h2>
+              <span class="text-sm text-gray-400">Klicken Sie auf das Bild, um einen Hotspot hinzuzufügen</span>
+            </div>
+            
+            <div id="image-container" class="relative bg-black rounded-lg overflow-hidden cursor-crosshair" style="min-height: 500px;">
+              <img id="main-image" src="" alt="Produkt" class="w-full h-auto" />
+              <div id="hotspots-overlay" class="absolute inset-0">
+                <!-- Hotspots will be rendered here -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hotspot List & Editor -->
+        <div class="space-y-6">
+          <!-- Current Hotspots -->
+          <div class="bg-black-soft border border-gray-800 rounded-xl p-6">
+            <h2 class="text-lg font-medium mb-4">Hotspots</h2>
+            <div id="hotspot-list" class="space-y-3">
+              <p class="text-gray-500 text-sm">Noch keine Hotspots. Klicken Sie auf das Bild.</p>
+            </div>
+          </div>
+
+          <!-- Hotspot Editor (shown when a hotspot is selected) -->
+          <div id="hotspot-editor" class="hidden bg-black-soft border border-gray-800 rounded-xl p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-medium">Hotspot bearbeiten</h2>
+              <button id="delete-hotspot" class="text-red-400 hover:text-red-300 text-sm">
+                Löschen
+              </button>
+            </div>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Titel *</label>
+                <input 
+                  type="text" 
+                  id="hotspot-title"
+                  class="w-full px-4 py-3 bg-black-rich border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:border-brown-warm focus:outline-none transition-colors"
+                  placeholder="z.B. Revers"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Beschreibung *</label>
+                <textarea 
+                  id="hotspot-description"
+                  rows="3"
+                  class="w-full px-4 py-3 bg-black-rich border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:border-brown-warm focus:outline-none transition-colors resize-none"
+                  placeholder="Beschreiben Sie dieses Detail..."
+                ></textarea>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Material</label>
+                <input 
+                  type="text" 
+                  id="hotspot-material"
+                  class="w-full px-4 py-3 bg-black-rich border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:border-brown-warm focus:outline-none transition-colors"
+                  placeholder="z.B. Super 150 Schurwolle"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Herkunft</label>
+                <input 
+                  type="text" 
+                  id="hotspot-origin"
+                  class="w-full px-4 py-3 bg-black-rich border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:border-brown-warm focus:outline-none transition-colors"
+                  placeholder="z.B. Biella, Italien"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Pflege</label>
+                <input 
+                  type="text" 
+                  id="hotspot-care"
+                  class="w-full px-4 py-3 bg-black-rich border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:border-brown-warm focus:outline-none transition-colors"
+                  placeholder="z.B. Professionelle Reinigung"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Besonderheiten (eine pro Zeile)</label>
+                <textarea 
+                  id="hotspot-features"
+                  rows="3"
+                  class="w-full px-4 py-3 bg-black-rich border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:border-brown-warm focus:outline-none transition-colors resize-none font-mono text-sm"
+                  placeholder="Handgenäht&#10;AMF-Steppung&#10;Echtes Knopfloch"
+                ></textarea>
+              </div>
+
+              <button 
+                id="update-hotspot"
+                class="w-full px-4 py-3 bg-brown-warm hover:bg-brown-light text-white rounded-lg transition-colors"
+              >
+                Hotspot aktualisieren
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="error" class="hidden text-center py-12">
+      <p class="text-red-400">Produkt nicht gefunden oder keine Bilder vorhanden</p>
+      <a href="/products" class="text-brown-warm hover:text-brown-light mt-4 inline-block">
+        Zurück zur Liste
+      </a>
+    </div>
+  </div>
+</AdminLayout>
+
+<script define:vars={{ id, API_URL }}>
+  let product = null;
+  let currentImageIndex = 0;
+  let hotspots = []; // Array of InteractiveImage objects
+  let selectedHotspotId = null;
+
+  // Generate unique ID
+  function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  }
+
+  // Load product data
+  async function loadProduct() {
+    try {
+      const response = await fetch(`${API_URL}/api/products/${id}`);
+      if (!response.ok) throw new Error('Not found');
+      
+      product = await response.json();
+      
+      if (!product.images || product.images.length === 0) {
+        throw new Error('No images');
+      }
+
+      // Load existing hotspots or create empty structure
+      hotspots = product.hotspots || [];
+      
+      document.getElementById('product-name').textContent = `Hotspots: ${product.name}`;
+      
+      // Render image selector
+      renderImageSelector();
+      
+      // Select first image
+      selectImage(0);
+      
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('editor-container').classList.remove('hidden');
+    } catch (error) {
+      console.error('Error loading product:', error);
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('error').classList.remove('hidden');
+    }
+  }
+
+  // Render image selector thumbnails
+  function renderImageSelector() {
+    const container = document.getElementById('image-selector');
+    container.innerHTML = '';
+    
+    product.images.forEach((imageUrl, index) => {
+      const hasHotspots = hotspots.some(h => h.imageIndex === index);
+      const thumb = document.createElement('button');
+      thumb.className = `relative flex-shrink-0 w-20 h-24 rounded-lg overflow-hidden border-2 transition-all ${
+        currentImageIndex === index ? 'border-brown-warm' : 'border-gray-800 hover:border-gray-600'
+      }`;
+      thumb.innerHTML = `
+        <img src="${imageUrl}" alt="Bild ${index + 1}" class="w-full h-full object-cover" />
+        ${hasHotspots ? `
+          <span class="absolute top-1 right-1 w-4 h-4 bg-brown-warm rounded-full flex items-center justify-center text-xs">
+            ${hotspots.find(h => h.imageIndex === index)?.hotspots.length || 0}
+          </span>
+        ` : ''}
+      `;
+      thumb.onclick = () => selectImage(index);
+      container.appendChild(thumb);
+    });
+  }
+
+  // Select an image to edit
+  function selectImage(index) {
+    currentImageIndex = index;
+    selectedHotspotId = null;
+    
+    const mainImage = document.getElementById('main-image');
+    mainImage.src = product.images[index];
+    
+    // Update selector UI
+    renderImageSelector();
+    
+    // Render hotspots for this image
+    renderHotspots();
+    
+    // Hide editor
+    document.getElementById('hotspot-editor').classList.add('hidden');
+  }
+
+  // Get or create hotspot data for current image
+  function getCurrentImageHotspots() {
+    let imageData = hotspots.find(h => h.imageIndex === currentImageIndex);
+    if (!imageData) {
+      imageData = {
+        imageUrl: product.images[currentImageIndex],
+        imageIndex: currentImageIndex,
+        hotspots: []
+      };
+      hotspots.push(imageData);
+    }
+    return imageData;
+  }
+
+  // Render hotspots on image
+  function renderHotspots() {
+    const overlay = document.getElementById('hotspots-overlay');
+    const imageData = getCurrentImageHotspots();
+    
+    overlay.innerHTML = '';
+    
+    imageData.hotspots.forEach(hotspot => {
+      const dot = document.createElement('button');
+      dot.className = `absolute transform -translate-x-1/2 -translate-y-1/2 group`;
+      dot.style.left = `${hotspot.x}%`;
+      dot.style.top = `${hotspot.y}%`;
+      dot.innerHTML = `
+        <span class="absolute inset-0 w-8 h-8 -m-2 rounded-full ${selectedHotspotId === hotspot.id ? 'bg-brown-light/40' : 'bg-brown-warm/20'} group-hover:bg-brown-warm/40 transition-colors"></span>
+        <span class="relative block w-4 h-4 rounded-full ${selectedHotspotId === hotspot.id ? 'bg-brown-light' : 'bg-brown-warm'} border-2 border-white shadow-lg"></span>
+        <span class="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 bg-black text-white text-xs whitespace-nowrap rounded opacity-0 group-hover:opacity-100 transition-opacity">
+          ${hotspot.title || 'Unbenannt'}
+        </span>
+      `;
+      dot.onclick = (e) => {
+        e.stopPropagation();
+        selectHotspot(hotspot.id);
+      };
+      overlay.appendChild(dot);
+    });
+
+    // Update hotspot list
+    renderHotspotList();
+  }
+
+  // Render hotspot list
+  function renderHotspotList() {
+    const list = document.getElementById('hotspot-list');
+    const imageData = getCurrentImageHotspots();
+    
+    if (imageData.hotspots.length === 0) {
+      list.innerHTML = '<p class="text-gray-500 text-sm">Noch keine Hotspots. Klicken Sie auf das Bild.</p>';
+      return;
+    }
+
+    list.innerHTML = '';
+    imageData.hotspots.forEach((hotspot, index) => {
+      const item = document.createElement('button');
+      item.className = `w-full text-left p-3 rounded-lg transition-colors ${
+        selectedHotspotId === hotspot.id 
+          ? 'bg-brown-warm/20 border border-brown-warm' 
+          : 'bg-black-rich border border-gray-800 hover:border-gray-700'
+      }`;
+      item.innerHTML = `
+        <div class="flex items-center gap-3">
+          <span class="w-6 h-6 rounded-full bg-brown-warm flex items-center justify-center text-xs font-medium">
+            ${index + 1}
+          </span>
+          <span class="text-sm">${hotspot.title || 'Unbenannt'}</span>
+        </div>
+      `;
+      item.onclick = () => selectHotspot(hotspot.id);
+      list.appendChild(item);
+    });
+  }
+
+  // Select a hotspot for editing
+  function selectHotspot(hotspotId) {
+    selectedHotspotId = hotspotId;
+    const imageData = getCurrentImageHotspots();
+    const hotspot = imageData.hotspots.find(h => h.id === hotspotId);
+    
+    if (!hotspot) return;
+
+    // Fill editor form
+    document.getElementById('hotspot-title').value = hotspot.title || '';
+    document.getElementById('hotspot-description').value = hotspot.description || '';
+    document.getElementById('hotspot-material').value = hotspot.details?.material || '';
+    document.getElementById('hotspot-origin').value = hotspot.details?.origin || '';
+    document.getElementById('hotspot-care').value = hotspot.details?.care || '';
+    document.getElementById('hotspot-features').value = (hotspot.details?.features || []).join('\n');
+
+    // Show editor
+    document.getElementById('hotspot-editor').classList.remove('hidden');
+    
+    // Re-render to highlight selected
+    renderHotspots();
+  }
+
+  // Add new hotspot on image click
+  document.getElementById('image-container').addEventListener('click', (e) => {
+    const container = e.currentTarget;
+    const rect = container.getBoundingClientRect();
+    
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    const imageData = getCurrentImageHotspots();
+    const newHotspot = {
+      id: generateId(),
+      x: Math.round(x * 100) / 100,
+      y: Math.round(y * 100) / 100,
+      title: '',
+      description: '',
+      details: {}
+    };
+
+    imageData.hotspots.push(newHotspot);
+    selectHotspot(newHotspot.id);
+    renderImageSelector();
+  });
+
+  // Update hotspot
+  document.getElementById('update-hotspot').addEventListener('click', () => {
+    if (!selectedHotspotId) return;
+
+    const imageData = getCurrentImageHotspots();
+    const hotspot = imageData.hotspots.find(h => h.id === selectedHotspotId);
+    
+    if (!hotspot) return;
+
+    hotspot.title = document.getElementById('hotspot-title').value;
+    hotspot.description = document.getElementById('hotspot-description').value;
+    
+    const features = document.getElementById('hotspot-features').value
+      .split('\n')
+      .map(f => f.trim())
+      .filter(Boolean);
+
+    hotspot.details = {
+      material: document.getElementById('hotspot-material').value || undefined,
+      origin: document.getElementById('hotspot-origin').value || undefined,
+      care: document.getElementById('hotspot-care').value || undefined,
+      features: features.length > 0 ? features : undefined
+    };
+
+    // Clean up empty details
+    Object.keys(hotspot.details).forEach(key => {
+      if (!hotspot.details[key]) delete hotspot.details[key];
+    });
+
+    renderHotspots();
+    renderImageSelector();
+  });
+
+  // Delete hotspot
+  document.getElementById('delete-hotspot').addEventListener('click', () => {
+    if (!selectedHotspotId) return;
+    
+    if (!confirm('Möchten Sie diesen Hotspot wirklich löschen?')) return;
+
+    const imageData = getCurrentImageHotspots();
+    imageData.hotspots = imageData.hotspots.filter(h => h.id !== selectedHotspotId);
+    
+    // Remove empty image entries
+    hotspots = hotspots.filter(h => h.hotspots.length > 0);
+
+    selectedHotspotId = null;
+    document.getElementById('hotspot-editor').classList.add('hidden');
+    
+    renderHotspots();
+    renderImageSelector();
+  });
+
+  // Save all hotspots
+  document.getElementById('save-hotspots').addEventListener('click', async () => {
+    try {
+      // Clean up hotspots array - remove empty entries
+      const cleanHotspots = hotspots.filter(h => h.hotspots.length > 0);
+
+      const response = await fetch(`${API_URL}/api/products/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...product,
+          hotspots: cleanHotspots
+        }),
+      });
+
+      if (response.ok) {
+        alert('Hotspots erfolgreich gespeichert!');
+      } else {
+        const error = await response.json();
+        alert(`Fehler: ${error.error || 'Unbekannter Fehler'}`);
+      }
+    } catch (error) {
+      console.error('Error saving hotspots:', error);
+      alert('Fehler beim Speichern.');
+    }
+  });
+
+  // Initialize
+  loadProduct();
+</script>
+
+<style>
+  #image-container img {
+    display: block;
+  }
+  
+  #hotspots-overlay {
+    pointer-events: none;
+  }
+  
+  #hotspots-overlay button {
+    pointer-events: auto;
+  }
+</style>
