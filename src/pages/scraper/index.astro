@@ -1,0 +1,350 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:3000';
+
+const scrapeUrls = [
+  { url: 'https://www.artofmen.de/lookbook/', name: 'Lookbook (Alle Anzüge)' },
+  { url: 'https://www.artofmen.de/braeutigam/', name: 'Bräutigam' },
+  { url: 'https://www.artofmen.de/anzuege-im-alltag/', name: 'Anzüge im Alltag' },
+  { url: 'https://www.artofmen.de/destination/', name: 'Destination Wedding' },
+  { url: 'https://www.artofmen.de/royal/', name: 'Royal Wedding' },
+  { url: 'https://www.artofmen.de/vintage/', name: 'Vintage Wedding' },
+  { url: 'https://www.artofmen.de/hybrid/', name: 'Hybrid / Praktisch' },
+  { url: 'https://www.artofmen.de/black-tie/', name: 'Black Tie' },
+  { url: 'https://www.artofmen.de/accessoires/', name: 'Accessoires' },
+  { url: 'https://www.artofmen.de/schuhe/', name: 'Schuhe' },
+];
+---
+
+<AdminLayout title="Product Scraper">
+  <div class="space-y-8 max-w-4xl">
+    <!-- Header -->
+    <div>
+      <h2 class="text-2xl font-medium font-serif">Product Scraper</h2>
+      <p class="text-gray-400 text-sm mt-1">
+        Produkte von artofmen.de importieren und automatisch Beschreibungen generieren
+      </p>
+    </div>
+
+    <!-- Status Card -->
+    <div id="status-card" class="bg-black-soft border border-gray-800 rounded-xl p-6">
+      <h3 class="font-medium mb-4">API Status</h3>
+      <div class="space-y-2 text-sm">
+        <div class="flex items-center gap-2">
+          <span id="scraping-status" class="w-2 h-2 rounded-full bg-gray-500"></span>
+          <span>ScrapingDog API</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="ai-status" class="w-2 h-2 rounded-full bg-gray-500"></span>
+          <span>OpenAI</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 1: Select Pages & Scrape -->
+    <div class="bg-black-soft border border-gray-800 rounded-xl p-6">
+      <h3 class="font-medium mb-4">Schritt 1: Seiten auswählen & scrapen</h3>
+      
+      <!-- URL Selection -->
+      <div class="space-y-2 mb-6">
+        {scrapeUrls.map((item, index) => (
+          <label class="flex items-center gap-3 p-3 bg-black-rich rounded-lg cursor-pointer hover:bg-gray-900 transition-colors">
+            <input 
+              type="checkbox" 
+              class="url-checkbox w-4 h-4 accent-brown-warm" 
+              data-url={item.url}
+              data-name={item.name}
+              checked={index === 0}
+            />
+            <div class="flex-1">
+              <p class="font-medium">{item.name}</p>
+              <p class="text-xs text-gray-500">{item.url}</p>
+            </div>
+          </label>
+        ))}
+      </div>
+
+      <div class="flex items-center gap-4">
+        <button 
+          id="scrape-btn"
+          class="px-4 py-2 bg-brown-warm hover:bg-brown-light text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Ausgewählte Seiten scrapen
+        </button>
+        <div id="scrape-progress" class="hidden flex items-center gap-2 text-sm text-gray-400">
+          <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span id="scrape-status">Scrape läuft...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Preview & Select -->
+    <div id="preview-section" class="hidden bg-black-soft border border-gray-800 rounded-xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-medium">Schritt 2: Produkte auswählen</h3>
+          <p class="text-gray-500 text-sm mt-1">
+            <span id="product-count">0</span> Produkte gefunden
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <button 
+            id="select-all-btn"
+            class="px-3 py-1 text-sm border border-gray-700 hover:border-gray-600 rounded transition-colors"
+          >
+            Alle auswählen
+          </button>
+          <button 
+            id="deselect-all-btn"
+            class="px-3 py-1 text-sm border border-gray-700 hover:border-gray-600 rounded transition-colors"
+          >
+            Alle abwählen
+          </button>
+        </div>
+      </div>
+      
+      <div id="products-list" class="max-h-96 overflow-y-auto space-y-2">
+        <!-- Products will be inserted here -->
+      </div>
+    </div>
+
+    <!-- Step 3: Generate -->
+    <div id="generate-section" class="hidden bg-black-soft border border-gray-800 rounded-xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-medium">Schritt 3: AI Beschreibungen generieren</h3>
+          <p class="text-gray-500 text-sm mt-1">OpenAI erstellt Beschreibung und Geschichte</p>
+        </div>
+        <div class="flex gap-2">
+          <button 
+            id="generate-btn"
+            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
+          >
+            Generieren & Speichern
+          </button>
+        </div>
+      </div>
+      
+      <div id="generate-progress" class="hidden">
+        <div class="flex items-center gap-2 text-sm text-gray-400">
+          <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span id="generate-status">Generiere...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results-section" class="hidden bg-black-soft border border-gray-800 rounded-xl p-6">
+      <h3 class="font-medium mb-4 text-green-400">✓ Import abgeschlossen</h3>
+      <div id="results-content" class="space-y-2 text-sm">
+        <!-- Results will be shown here -->
+      </div>
+      <div class="mt-4">
+        <a href="/products" class="text-brown-warm hover:text-brown-light">
+          → Zu den Produkten
+        </a>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<script define:vars={{ API_URL }}>
+  let scrapedProducts = [];
+  let selectedProducts = new Set();
+
+  // Check API status
+  async function checkStatus() {
+    try {
+      const response = await fetch(`${API_URL}/api/scraper`);
+      const data = await response.json();
+      
+      document.getElementById('scraping-status').className = 
+        `w-2 h-2 rounded-full ${data.scrapingDog ? 'bg-green-500' : 'bg-red-500'}`;
+      document.getElementById('ai-status').className = 
+        `w-2 h-2 rounded-full ${data.aiGeneration ? 'bg-green-500' : 'bg-red-500'}`;
+      
+      document.getElementById('scrape-btn').disabled = !data.scrapingDog;
+    } catch (error) {
+      console.error('Status check failed:', error);
+    }
+  }
+
+  // Get selected URLs
+  function getSelectedUrls() {
+    const checkboxes = document.querySelectorAll('.url-checkbox:checked');
+    return Array.from(checkboxes).map(cb => ({
+      url: cb.dataset.url,
+      name: cb.dataset.name
+    }));
+  }
+
+  // Scrape multiple pages
+  async function scrapeProducts() {
+    const selectedUrls = getSelectedUrls();
+    
+    if (selectedUrls.length === 0) {
+      alert('Bitte wählen Sie mindestens eine Seite aus');
+      return;
+    }
+    
+    const btn = document.getElementById('scrape-btn');
+    const progress = document.getElementById('scrape-progress');
+    const status = document.getElementById('scrape-status');
+    
+    btn.disabled = true;
+    progress.classList.remove('hidden');
+    scrapedProducts = [];
+    
+    try {
+      for (let i = 0; i < selectedUrls.length; i++) {
+        const { url, name } = selectedUrls[i];
+        status.textContent = `Scrape ${name} (${i + 1}/${selectedUrls.length})...`;
+        
+        const response = await fetch(`${API_URL}/api/scraper`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.products) {
+          // Add source info and merge
+          data.products.forEach(p => {
+            p.source = name;
+            // Avoid duplicates by name
+            if (!scrapedProducts.some(existing => existing.name === p.name)) {
+              scrapedProducts.push(p);
+            }
+          });
+        }
+        
+        // Small delay between requests
+        if (i < selectedUrls.length - 1) {
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
+      
+      if (scrapedProducts.length > 0) {
+        renderProducts();
+        document.getElementById('preview-section').classList.remove('hidden');
+        document.getElementById('generate-section').classList.remove('hidden');
+        document.getElementById('product-count').textContent = scrapedProducts.length;
+      } else {
+        alert('Keine Produkte gefunden');
+      }
+    } catch (error) {
+      alert('Scrape fehlgeschlagen: ' + error.message);
+    } finally {
+      btn.disabled = false;
+      progress.classList.add('hidden');
+    }
+  }
+
+  // Render product list
+  function renderProducts() {
+    const container = document.getElementById('products-list');
+    container.innerHTML = scrapedProducts.map((p, i) => `
+      <label class="flex items-center gap-3 p-3 bg-black-rich rounded-lg cursor-pointer hover:bg-gray-900 transition-colors">
+        <input 
+          type="checkbox" 
+          class="product-checkbox w-4 h-4 accent-brown-warm" 
+          data-index="${i}"
+          ${selectedProducts.has(i) ? 'checked' : ''}
+        />
+        <div class="flex-1 min-w-0">
+          <p class="font-medium truncate">${p.name}</p>
+          <p class="text-sm text-gray-500">${p.category} ${p.price ? '• ' + p.price : ''}</p>
+          <p class="text-xs text-gray-600">${p.source || ''}</p>
+        </div>
+        ${p.imageUrl ? `<img src="${p.imageUrl}" alt="" class="w-10 h-10 object-cover rounded" />` : ''}
+      </label>
+    `).join('');
+    
+    // Add checkbox listeners
+    document.querySelectorAll('.product-checkbox').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const index = parseInt(e.target.dataset.index);
+        if (e.target.checked) {
+          selectedProducts.add(index);
+        } else {
+          selectedProducts.delete(index);
+        }
+      });
+    });
+  }
+
+  // Select/Deselect all
+  document.getElementById('select-all-btn').addEventListener('click', () => {
+    scrapedProducts.forEach((_, i) => selectedProducts.add(i));
+    document.querySelectorAll('.product-checkbox').forEach(cb => cb.checked = true);
+  });
+  
+  document.getElementById('deselect-all-btn').addEventListener('click', () => {
+    selectedProducts.clear();
+    document.querySelectorAll('.product-checkbox').forEach(cb => cb.checked = false);
+  });
+
+  // Generate and save
+  async function generateAndSave() {
+    if (selectedProducts.size === 0) {
+      alert('Bitte wählen Sie mindestens ein Produkt aus');
+      return;
+    }
+    
+    const btn = document.getElementById('generate-btn');
+    const progress = document.getElementById('generate-progress');
+    const status = document.getElementById('generate-status');
+    
+    btn.disabled = true;
+    progress.classList.remove('hidden');
+    
+    const productsToGenerate = Array.from(selectedProducts).map(i => scrapedProducts[i]);
+    
+    try {
+      status.textContent = `Generiere ${productsToGenerate.length} Produkte...`;
+      
+      const response = await fetch(`${API_URL}/api/scraper/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          products: productsToGenerate,
+          saveToDatabase: true,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        document.getElementById('results-section').classList.remove('hidden');
+        document.getElementById('results-content').innerHTML = `
+          <p class="text-green-400">✓ ${data.generated} Produkte generiert und gespeichert</p>
+          ${data.errors > 0 ? `<p class="text-yellow-400">⚠ ${data.errors} Fehler</p>` : ''}
+        `;
+      } else {
+        alert('Fehler: ' + (data.error || 'Generation fehlgeschlagen'));
+      }
+    } catch (error) {
+      alert('Generation fehlgeschlagen: ' + error.message);
+    } finally {
+      btn.disabled = false;
+      progress.classList.add('hidden');
+    }
+  }
+
+  // Event listeners
+  document.getElementById('scrape-btn').addEventListener('click', scrapeProducts);
+  document.getElementById('generate-btn').addEventListener('click', generateAndSave);
+
+  // Initial status check
+  checkStatus();
+</script>
